@@ -4,6 +4,7 @@ import com.example.registration_emailverification.resistration.token.Confirmatio
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
@@ -21,6 +22,9 @@ public interface ConfirmationTokenRepository extends JpaRepository<ConfirmationT
             "WHERE c.token = ?1")
     int updateConfirmedAt(String token, LocalDateTime confirmedAt);
 
+    @Modifying
+    @Query("DELETE FROM ConfirmationToken  c  where  c.id = :id")
+    void deleteConfirmation(@Param("id") Long id);
     /*
     The @Modifying annotation is used to enhance the @Query annotation
      so that we can execute not only SELECT queries, but also INSERT,

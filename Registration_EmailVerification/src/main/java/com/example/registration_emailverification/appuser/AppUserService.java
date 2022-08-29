@@ -1,6 +1,7 @@
 package com.example.registration_emailverification.appuser;
 
 import com.example.registration_emailverification.repository.AppUserRepo;
+import com.example.registration_emailverification.repository.ConfirmationTokenRepository;
 import com.example.registration_emailverification.resistration.token.ConfirmationToken;
 import com.example.registration_emailverification.resistration.token.ConfirmationTokenService;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,7 @@ public class AppUserService implements UserDetailsService {
     private final static String USER_NOT_FOUND = "user with email %s not found";
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final ConfirmationTokenService confirmationTokenService;
+    private final ConfirmationTokenRepository confirmationTokenRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -39,11 +41,12 @@ public class AppUserService implements UserDetailsService {
             //TODO check of attributes are the same and
             //TODO if email not confirm send confirmation email
             throw new IllegalStateException("Email already taken");
-        } else
+        } else if (userExists && !appUser.getEnabled()) {
+            confirmationTokenRepository.deleteConfirmation(appUser.getId());
+        } else if (!(userExists && appUser.getEnabled()))
             appUser.setPassword(bCryptPasswordEncoder.encode(appUser.getPassword()));
         //  TODO : Send confirmation token
         appUserRepo.save(appUser);
-
         String token = UUID.randomUUID().toString();
         //Send confirmation token
         ConfirmationToken confirmationToken = new ConfirmationToken(
@@ -52,11 +55,11 @@ public class AppUserService implements UserDetailsService {
                 LocalDateTime.now().plusMinutes(15),
                 appUser
         );
-
         confirmationTokenService.saveConfirmationToken(confirmationToken);
         //TODO : SEND EMAIL
         return token;
     }
+
 
     public int enableAppUser(String email) {
         return appUserRepo.enableAppUser(email);
